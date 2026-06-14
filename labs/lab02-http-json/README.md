@@ -274,7 +274,7 @@ Answer the following questions in your submission:
 2. What does the `Content-Type: application/json` header tell the server?
   That header tells the server the format type of the request body. This ensures the server knows how to parse incoming data.
 
-3. Why should a server return different HTTP status codes for different situations?
+3. Why should a server return different HTTP status codes for different situations
   A server returns different status codes so client applications can instantly know the results of a request without needing to analyze the data itself.
 
 4. What happens if the client sends invalid JSON?
