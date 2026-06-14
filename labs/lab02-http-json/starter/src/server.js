@@ -38,43 +38,126 @@ export function readJsonBody(req) {
 }
 
 export function handleCalculate(body) {
-    // TODO: Validate that operation, a, and b are present.
-    // TODO: Validate that a and b are numbers.
-    // TODO: Support add, subtract, multiply, and divide.
-    // TODO: Return an error for unsupported operations.
-    // TODO: Return an error for division by zero.
+    const { operation, a, b } = body;
 
-    return {
-        statusCode: 501,
-        response: {
-            error: "Calculation not implemented yet"
-        }
-    };
+    if (operation === undefined || a === undefined || b === undefined) {
+        return {
+            statusCode: 400,
+            response: {
+                error: "Missing required fields"
+            }
+        };
+    }
+
+    if (typeof operation !== "string") {
+        return {
+            statusCode: 400,
+            response: {
+                error: "Operation must be a string"
+            }
+        };
+    }
+
+    if (typeof a !== "number" || typeof b !== "number" || !Number.isFinite(a) || !Number.isFinite(b)) {
+        return {
+            statusCode: 400,
+            response: {
+                error: "a and b must be numbers"
+            }
+        };
+    }
+
+    switch (operation) {
+        case "add":
+            return {
+                statusCode: 200,
+                response: {
+                    result: a + b
+                }
+            };
+
+        case "subtract":
+            return {
+                statusCode: 200,
+                response: {
+                    result: a - b
+                }
+            };
+
+        case "multiply":
+            return {
+                statusCode: 200,
+                response: {
+                    result: a * b
+                }
+            };
+
+        case "divide":
+            if (b === 0) {
+                return {
+                    statusCode: 400,
+                    response: {
+                        error: "Division by zero"
+                    }
+                };
+            }
+
+            return {
+                statusCode: 200,
+                response: {
+                    result: a / b
+                }
+            };
+
+        default:
+            return {
+                statusCode: 400,
+                response: {
+                    error: "Unsupported operation"
+                }
+            };
+    }
+}
+
+function methodNotAllowed(res) {
+    sendJson(res, 405, { error: "Method not allowed" });
 }
 
 export async function requestHandler(req, res) {
     requestCount += 1;
 
     const method = req.method;
-    const url = req.url;
+    const pathname = new URL(req.url, "http://localhost").pathname;
 
-    if (method === "GET" && url === "/health") {
+    if (pathname === "/health") {
+        if (method !== "GET") {
+            methodNotAllowed(res);
+            return;
+        }
+
         sendJson(res, 200, { status: "ok" });
         return;
     }
 
-    if (method === "GET" && url === "/requests") {
-        // TODO: Return the current request count as JSON.
-        sendJson(res, 501, { error: "Request counter not implemented yet" });
+    if (pathname === "/requests") {
+        if (method !== "GET") {
+            methodNotAllowed(res);
+            return;
+        }
+
+        sendJson(res, 200, { count: requestCount });
         return;
     }
 
-    if (method === "POST" && url === "/echo") {
+    if (pathname === "/echo") {
+        if (method !== "POST") {
+            methodNotAllowed(res);
+            return;
+        }
+
         try {
             const body = await readJsonBody(req);
-
-            // TODO: Return the parsed JSON body back to the client.
-            sendJson(res, 501, { error: "Echo not implemented yet" });
+            sendJson(res, 200, body);
         } catch {
             sendJson(res, 400, { error: "Invalid JSON" });
         }
@@ -82,7 +165,12 @@ export async function requestHandler(req, res) {
         return;
     }
 
-    if (method === "POST" && url === "/calculate") {
+    if (pathname === "/calculate") {
+        if (method !== "POST") {
+            methodNotAllowed(res);
+            return;
+        }
+
         try {
             const body = await readJsonBody(req);
             const result = handleCalculate(body);

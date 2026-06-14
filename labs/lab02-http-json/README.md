@@ -269,42 +269,16 @@ npm run test:watch
 Answer the following questions in your submission:
 
 1. What is the difference between a TCP message and an HTTP request?
+  TCP messages are raw data blocks sent over a network connection, where as an HTTP request has a specific format that is follows, utilizing TCP protocol.
+
 2. What does the `Content-Type: application/json` header tell the server?
+  That header tells the server the format type of the request body. This ensures the server knows how to parse incoming data.
+
 3. Why should a server return different HTTP status codes for different situations?
+  A server returns different status codes so client applications can instantly know the results of a request without needing to analyze the data itself.
+
 4. What happens if the client sends invalid JSON?
+  If the client sends an invalid request, the server would return an error response stating why the request failed.
+
 5. How is this lab different from Lab 1?
-
-## Graduate Students
-
-Graduate students should complete one additional feature.
-
-Choose one of the following:
-
-1. Add a new route, such as `GET /time` or `POST /uppercase`.
-2. Add one additional calculation operation and document it.
-3. Improve the request counter so it tracks counts by route.
-4. Add additional automated tests for error handling.
-
-Document your graduate extension in your submission.
-
-## Submission
-
-Submit your completed lab according to the course submission instructions.
-
-Your submission should include:
-
-* Your updated source code.
-* Your completed HTTP JSON server.
-* Your updated README if you changed or extended the API.
-* Your answers to the reflection questions.
-* Any graduate extension work, if applicable.
-
-Before submitting, verify that:
-
-```bash
-npm test
-```
-
-runs successfully.
-
-Submit your GitHub link in the Canvas assignment for this lab.
+  This lab extends the logic from Lab 01 to include some HTTP formatted responses instead of using our own protocol.
