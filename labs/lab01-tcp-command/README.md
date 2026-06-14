@@ -178,26 +178,14 @@ npm run test:watch
 Answer the following questions in your submission:
 
 1. What is the difference between the client and the server?
+    The client is responsible for requesting the information from the server. The server then 'serves' that information to client. 
+
 2. Why does the server need to keep running after handling one request?
+    The server continues running because other clients may connect or that same client may request more information.
+
 3. What happens if two clients connect at the same time?
+    The server will create a separate socket for each client and handle their requests separately.
+
 4. How is this different from HTTP?
-
-## Submission
-
-Submit your completed lab according to the course submission instructions.
-
-Your submission should include:
-
-* Your updated source code.
-* Your completed `commands.js`.
-* Your updated README protocol description.
-* Your answers to the reflection questions.
-* Any graduate extension work, if applicable.
-
-Before submitting, verify that:
-
-```
-npm test
-```
-
-runs successfully.
+    HTTP is a protocol structure similar to the one in Lab 01, but our lab runs on port 3000 by default and does not have the entire feature set of HTTP.
+    
