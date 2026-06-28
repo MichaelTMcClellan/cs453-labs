@@ -13,35 +13,98 @@ export function createApp() {
     { id: 2, name: "mouse", quantity: 5 }
   ];
 
+  // find an item by its numeric id. Returns the item or undefined.
+  function findItem(id) {
+    return items.find((item) => item.id === id);
+  }
+
+  function validateBody(body) {
+    if (body === undefined || body === null || typeof body !== "object") {
+      return "Request body must be a JSON object";
+    }
+ 
+    if (typeof body.name !== "string" || body.name.trim() === "") {
+      return "Field 'name' is required and must be a non-empty string";
+    }
+ 
+    if (typeof body.quantity !== "number" || Number.isNaN(body.quantity)) {
+      return "Field 'quantity' is required and must be a number";
+    }
+ 
+    return null;
+  }
+
   app.get("/health", (req, res) => {
     res.json({ status: "ok" });
   });
 
-  // TODO: Return all items.
+  // Return all items.
   app.get("/items", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+    res.json(items);
   });
 
-  // TODO: Return one item by ID.
+  // Return one item by ID.
   app.get("/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+    const id = Number(req.params.id);
+    const item = findItem(id);
+ 
+    if (!item) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+ 
+    res.json(item);
   });
 
-  // TODO: Create a new item.
+  // Create a new item.
   app.post("/items", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+    const error = validateBody(req.body);
+    if (error) {
+      return res.status(400).json({ error });
+    }
+ 
+    const newItem = {
+      id: nextId++,
+      name: req.body.name,
+      quantity: req.body.quantity
+    };
+ 
+    items.push(newItem);
+    res.status(201).json(newItem);
   });
 
-  // TODO: Update an existing item.
+  // Update an existing item. PUT replaces name and quantity.
   app.put("/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+    const id = Number(req.params.id);
+    const item = findItem(id);
+ 
+    if (!item) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+ 
+    const error = validateBody(req.body);
+    if (error) {
+      return res.status(400).json({ error });
+    }
+ 
+    item.name = req.body.name;
+    item.quantity = req.body.quantity;
+ 
+    res.json(item);
   });
 
-  // TODO: Delete an existing item.
+  // Delete an existing item.
   app.delete("/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+    const id = Number(req.params.id);
+    const index = items.findIndex((item) => item.id === id);
+ 
+    if (index === -1) {
+      return res.status(404).json({ error: "Item not found" });
+    }
+ 
+    items.splice(index, 1);
+    res.status(204).end();
   });
-
+ 
   app.use((req, res) => {
     res.status(404).json({ error: "Not found" });
   });
