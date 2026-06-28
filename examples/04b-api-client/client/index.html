@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CS 453 API Client Example</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script defer src="./app.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Basic API Client</h1>
+
+      <p>
+        This page is a browser client. It calls the API server using
+        <code>fetch</code>.
+      </p>
+
+      <section>
+        <h2>Items</h2>
+        <button id="load-items">Load Items</button>
+        <ul id="items"></ul>
+      </section>
+
+      <section>
+        <h2>Add Item</h2>
+        <form id="add-item-form">
+          <label for="item-name">Item name</label>
+          <input id="item-name" name="name" required />
+          <button type="submit">Add</button>
+        </form>
+      </section>
+
+      <section>
+        <h2>Status</h2>
+        <pre id="status">Ready.</pre>
+      </section>
+    </main>
+  </body>
+</html>

@@ -7,7 +7,7 @@ function sendJson(res, statusCode, data) {
         "Content-Type": "application/json"
     });
 
-    res.end(JSON.stringify(data));
+    res.end(JSON.stringify(data) + "\n");
 }
 
 function readRequestBody(req) {

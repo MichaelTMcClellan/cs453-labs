@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: Lab 3 Item API
+  version: 1.0.0
+  description: TODO - briefly describe this API.
+
+servers:
+  - url: http://localhost:3000
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Server is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  # TODO: Document GET /items.
+  # TODO: Document POST /items.
+  # TODO: Document GET /items/{id}.
+  # TODO: Document PUT /items/{id}.
+  # TODO: Document DELETE /items/{id}.
+  #
+  # Remember:
+  # - Express routes use :id, such as /items/:id.
+  # - OpenAPI paths use {id}, such as /items/{id}.
+  #
+  # You may define schemas under components/schemas if you want to avoid
+  # repeating the same object structure many times.
+
+components:
+  schemas:
+  # TODO: Define an Item schema with id, name, and quantity.
+  # TODO: Define an ItemInput schema with name and quantity.
+  # TODO: Define an ErrorResponse schema with an error message.
