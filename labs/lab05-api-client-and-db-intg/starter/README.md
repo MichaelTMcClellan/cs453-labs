@@ -38,29 +38,24 @@ postgres://postgres:postgres@localhost:5433/lab05
 - Better validation and error handling
 - Client-side UI for at least some of the new routes
 
-## Graduate Extension
-
-Add one more resource or relationship, such as categories, projects, or tags,
-and connect it to the database.
-
 ## Reflection Answers
 
 ### 1. What changed when the API moved from in-memory data to Postgres?
 
-TODO
+When the API moves to Postgres, the data itself becomes persistent across server restarts
 
 ### 2. When should you use `PUT` instead of `PATCH`?
 
-TODO
+PUT should be used when the entirety of a resource is being overwritten. PATCH should be used when only segments of the data need to be updated, as opposed to a complete overwrite
 
 ### 3. What kinds of validation belong in the API even if the browser client also validates input?
 
-TODO
+The API handles all forms of validation for routes, parameters, and body data. The API should handle input checking and reject invalid fields while returning the relevant code
 
 ### 4. How does the browser client help you test the API differently than `curl` alone?
 
-TODO
+A browser client helps test the API in a more complete, end-user experience way. Notably, browser client testing will take longer to verify and set up, as opposed to CURL testing. 
 
 ### 5. If you added an extension, what did you add and why?
 
-TODO
+I did not add any extension to the existing feature set

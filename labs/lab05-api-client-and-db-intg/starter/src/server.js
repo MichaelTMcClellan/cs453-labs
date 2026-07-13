@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import pg from "pg";
@@ -14,7 +16,68 @@ const pool = new Pool({
   password: process.env.PGPASSWORD ?? "postgres"
 });
 
-export function createApp() {
+function parseItemId(value) {
+  if (!/^\d+$/.test(value)) {
+    return null;
+  }
+
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateName(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function validateQuantity(value) {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0;
+}
+
+function badRequest(res, message) {
+  return res.status(400).json({
+    error: "Bad Request",
+    message
+  });
+}
+
+function notFound(res, id) {
+  return res.status(404).json({
+    error: "Not Found",
+    message: `Item ${id} does not exist.`
+  });
+}
+
+function internalServerError(res, message) {
+  return res.status(500).json({
+    error: "Internal Server Error",
+    message
+  });
+}
+
+function validateFullItemBody(body) {
+  if (!isPlainObject(body)) {
+    return "The request body must be a JSON object.";
+  }
+
+  const allowedFields = new Set(["name", "quantity"]);
+  const unknownFields = Object.keys(body).filter((key) => !allowedFields.has(key));
+
+  if (unknownFields.length > 0) {
+    return `Unknown field(s): ${unknownFields.join(", ")}.`;
+  }
+
+  if (!validateName(body.name) || !validateQuantity(body.quantity)) {
+    return "A non-empty name and non-negative integer quantity are required.";
+  }
+
+  return null;
+}
+
+export function createApp(database = pool) {
   const app = express();
 
   app.use(express.json());
@@ -28,21 +91,17 @@ export function createApp() {
 
   app.get("/health", async (req, res) => {
     try {
-      await pool.query("SELECT 1");
+      await database.query("SELECT 1");
       res.json({ status: "ok" });
     } catch (error) {
       console.error("Health check failed:", error);
-      res.status(500).json({
-        status: "error",
-        message: "Database connection failed."
-      });
+      internalServerError(res, "Database connection failed.");
     }
   });
 
-  // Starter route: return every item from the database.
   app.get("/api/items", async (req, res) => {
     try {
-      const result = await pool.query(`
+      const result = await database.query(`
         SELECT id, name, quantity
         FROM items
         ORDER BY id ASC
@@ -51,27 +110,22 @@ export function createApp() {
       res.json({ items: result.rows });
     } catch (error) {
       console.error("Failed to load items:", error);
-      res.status(500).json({
-        error: "Internal Server Error",
-        message: "Failed to load items."
-      });
+      internalServerError(res, "Failed to load items.");
     }
   });
 
-  // Starter route: create one item so the client can demonstrate a write.
   app.post("/api/items", async (req, res) => {
-    const name = req.body?.name?.trim();
-    const quantity = Number(req.body?.quantity);
+    const validationError = validateFullItemBody(req.body);
 
-    if (!name || !Number.isInteger(quantity) || quantity < 0) {
-      return res.status(400).json({
-        error: "Bad Request",
-        message: "A name and non-negative integer quantity are required."
-      });
+    if (validationError) {
+      return badRequest(res, validationError);
     }
 
+    const name = req.body.name.trim();
+    const quantity = req.body.quantity;
+
     try {
-      const result = await pool.query(
+      const result = await database.query(
         `
           INSERT INTO items (name, quantity)
           VALUES ($1, $2)
@@ -83,35 +137,189 @@ export function createApp() {
       res.status(201).json({ item: result.rows[0] });
     } catch (error) {
       console.error("Failed to add item:", error);
-      res.status(500).json({
-        error: "Internal Server Error",
-        message: "Failed to add item."
-      });
+      internalServerError(res, "Failed to add item.");
     }
   });
 
-  // TODO: Return one item by ID.
-  app.get("/api/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+  app.get("/api/items/:id", async (req, res) => {
+    const id = parseItemId(req.params.id);
+
+    if (id === null) {
+      return badRequest(res, "Item ID must be a positive integer.");
+    }
+
+    try {
+      const result = await database.query(
+        `
+          SELECT id, name, quantity
+          FROM items
+          WHERE id = $1
+        `,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return notFound(res, id);
+      }
+
+      res.json({ item: result.rows[0] });
+    } catch (error) {
+      console.error(`Failed to load item ${id}:`, error);
+      internalServerError(res, "Failed to load the item.");
+    }
   });
 
-  // TODO: Replace one item by ID.
-  app.put("/api/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+  app.put("/api/items/:id", async (req, res) => {
+    const id = parseItemId(req.params.id);
+
+    if (id === null) {
+      return badRequest(res, "Item ID must be a positive integer.");
+    }
+
+    const validationError = validateFullItemBody(req.body);
+
+    if (validationError) {
+      return badRequest(res, validationError);
+    }
+
+    const name = req.body.name.trim();
+    const quantity = req.body.quantity;
+
+    try {
+      const result = await database.query(
+        `
+          UPDATE items
+          SET name = $1, quantity = $2
+          WHERE id = $3
+          RETURNING id, name, quantity
+        `,
+        [name, quantity, id]
+      );
+
+      if (result.rows.length === 0) {
+        return notFound(res, id);
+      }
+
+      res.json({ item: result.rows[0] });
+    } catch (error) {
+      console.error(`Failed to replace item ${id}:`, error);
+      internalServerError(res, "Failed to replace the item.");
+    }
   });
 
-  // TODO: Partially update one item by ID.
-  app.patch("/api/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+  app.patch("/api/items/:id", async (req, res) => {
+    const id = parseItemId(req.params.id);
+
+    if (id === null) {
+      return badRequest(res, "Item ID must be a positive integer.");
+    }
+
+    if (!isPlainObject(req.body)) {
+      return badRequest(res, "The request body must be a JSON object.");
+    }
+
+    const allowedFields = new Set(["name", "quantity"]);
+    const fields = Object.keys(req.body);
+    const unknownFields = fields.filter((key) => !allowedFields.has(key));
+
+    if (unknownFields.length > 0) {
+      return badRequest(res, `Unknown field(s): ${unknownFields.join(", ")}.`);
+    }
+
+    if (fields.length === 0) {
+      return badRequest(res, "Provide at least one field to update: name or quantity.");
+    }
+
+    if (Object.hasOwn(req.body, "name") && !validateName(req.body.name)) {
+      return badRequest(res, "Name must be a non-empty string.");
+    }
+
+    if (Object.hasOwn(req.body, "quantity") && !validateQuantity(req.body.quantity)) {
+      return badRequest(res, "Quantity must be a non-negative integer.");
+    }
+
+    const assignments = [];
+    const values = [];
+
+    if (Object.hasOwn(req.body, "name")) {
+      values.push(req.body.name.trim());
+      assignments.push(`name = $${values.length}`);
+    }
+
+    if (Object.hasOwn(req.body, "quantity")) {
+      values.push(req.body.quantity);
+      assignments.push(`quantity = $${values.length}`);
+    }
+
+    values.push(id);
+
+    try {
+      const result = await database.query(
+        `
+          UPDATE items
+          SET ${assignments.join(", ")}
+          WHERE id = $${values.length}
+          RETURNING id, name, quantity
+        `,
+        values
+      );
+
+      if (result.rows.length === 0) {
+        return notFound(res, id);
+      }
+
+      res.json({ item: result.rows[0] });
+    } catch (error) {
+      console.error(`Failed to update item ${id}:`, error);
+      internalServerError(res, "Failed to update the item.");
+    }
   });
 
-  // TODO: Delete one item by ID.
-  app.delete("/api/items/:id", (req, res) => {
-    res.status(501).json({ error: "Not implemented yet" });
+  app.delete("/api/items/:id", async (req, res) => {
+    const id = parseItemId(req.params.id);
+
+    if (id === null) {
+      return badRequest(res, "Item ID must be a positive integer.");
+    }
+
+    try {
+      const result = await database.query(
+        `
+          DELETE FROM items
+          WHERE id = $1
+          RETURNING id, name, quantity
+        `,
+        [id]
+      );
+
+      if (result.rows.length === 0) {
+        return notFound(res, id);
+      }
+
+      res.json({
+        message: "Item deleted.",
+        item: result.rows[0]
+      });
+    } catch (error) {
+      console.error(`Failed to delete item ${id}:`, error);
+      internalServerError(res, "Failed to delete the item.");
+    }
+  });
+
+  app.use((error, req, res, next) => {
+    if (error instanceof SyntaxError && error.status === 400 && "body" in error) {
+      return badRequest(res, "The request body contains invalid JSON.");
+    }
+
+    console.error("Unhandled request error:", error);
+    return internalServerError(res, "An unexpected error occurred.");
   });
 
   app.use((req, res) => {
-    res.status(404).json({ error: "Not found" });
+    res.status(404).json({
+      error: "Not Found",
+      message: "The requested route does not exist."
+    });
   });
 
   return app;
@@ -139,7 +347,7 @@ export async function initializeDatabase() {
   }
 }
 
-const isMainModule = process.argv[1] === new URL(import.meta.url).pathname;
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
   const app = createApp();
