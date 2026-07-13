@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab 5 Client</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="page">
+      <section class="panel">
+        <h1>Lab 5 Inventory Client</h1>
+        <p>
+          This starter client can load items and create a new item. Extend it
+          as you add more API routes.
+        </p>
+
+        <div class="actions">
+          <button id="load-items" type="button">Load Items</button>
+        </div>
+
+        <form id="add-item-form">
+          <label>
+            Name
+            <input id="item-name" name="name" type="text" required>
+          </label>
+
+          <label>
+            Quantity
+            <input id="item-quantity" name="quantity" type="number" min="0" required>
+          </label>
+
+          <button type="submit">Add Item</button>
+        </form>
+
+        <p id="status" class="status">Ready.</p>
+
+        <ul id="items" class="items"></ul>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
